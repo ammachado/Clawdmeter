@@ -1,5 +1,5 @@
 #!/bin/bash
-# macOS installer for Clawdmeter daemon (Python + bleak + launchd).
+# macOS installer for Clawdmeter daemon (uv + launchd).
 # Mirrors install.sh but uses LaunchAgents instead of systemd user units.
 set -e
 
@@ -7,7 +7,6 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 SERVICE_LABEL="com.user.claude-usage-daemon"
 PLIST_SRC="$SCRIPT_DIR/daemon/$SERVICE_LABEL.plist"
 PLIST_DST="$HOME/Library/LaunchAgents/$SERVICE_LABEL.plist"
-VENV_DIR="$SCRIPT_DIR/daemon/.venv"
 DAEMON_PY="$SCRIPT_DIR/daemon/claude_usage_daemon.py"
 LOG_DIR="$HOME/Library/Logs"
 LOG_OUT="$LOG_DIR/claude-usage-daemon.out.log"
@@ -137,25 +136,10 @@ echo ""
 
 echo "[1/6] Checking prerequisites..."
 command -v curl >/dev/null || { echo "Error: curl is required"; exit 1; }
-
-# The daemon uses Python 3.10+ syntax (PEP 604 `X | None`). macOS ships an
-# older system python3 (3.9), so prefer a newer interpreter — Homebrew's if
-# present — and fall back to anything on PATH that is >= 3.10.
-py_ge_310() { "$1" -c 'import sys; sys.exit(0 if sys.version_info >= (3, 10) else 1)' >/dev/null 2>&1; }
-PYTHON3=""
-for cand in \
-    "$(command -v python3.13)" "$(command -v python3.12)" \
-    "$(command -v python3.11)" "$(command -v python3.10)" \
-    /opt/homebrew/bin/python3 /usr/local/bin/python3 \
-    "$(command -v python3)"; do
-    [ -n "$cand" ] && [ -x "$cand" ] || continue
-    if py_ge_310 "$cand"; then PYTHON3="$cand"; break; fi
-done
-if [ -z "$PYTHON3" ]; then
-    echo "Error: need Python >= 3.10. Install with: brew install python"
+if ! command -v uv >/dev/null; then
+    echo "Error: uv is required; install it from https://docs.astral.sh/uv/"
     exit 1
 fi
-echo "  Using $($PYTHON3 --version) at $PYTHON3"
 # blueutil lets the daemon auto-recover from a stale BLE bond (CoreBluetooth
 # Code=15 "failed to encrypt") after a firmware reflash, without you having to
 # manually "Forget This Device". Best-effort: install via Homebrew if present,
@@ -178,19 +162,9 @@ fi
 echo "  OK"
 echo ""
 
-echo "[2/6] Creating Python virtualenv at daemon/.venv ..."
-# Recreate the venv if it's missing or was built with an interpreter older
-# than 3.10 (e.g. a previous run that picked the system python3).
-if [ -d "$VENV_DIR" ] && ! py_ge_310 "$VENV_DIR/bin/python"; then
-    echo "  Existing venv is too old; recreating with $PYTHON3"
-    rm -rf "$VENV_DIR"
-fi
-if [ ! -d "$VENV_DIR" ]; then
-    "$PYTHON3" -m venv "$VENV_DIR"
-fi
-"$VENV_DIR/bin/pip" install --quiet --upgrade pip
-"$VENV_DIR/bin/pip" install --quiet "bleak>=0.22" "httpx>=0.27"
-PYTHON_BIN="$VENV_DIR/bin/python"
+echo "[2/6] Synchronizing uv environment at .venv ..."
+uv sync --project "$SCRIPT_DIR"
+PYTHON_BIN="$SCRIPT_DIR/.venv/bin/python"
 echo "  OK ($PYTHON_BIN)"
 echo ""
 

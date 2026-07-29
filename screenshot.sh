@@ -13,21 +13,13 @@ else
     PORT="$2"
 fi
 
-# Use pio's bundled python if pyserial isn't on the system python.
-PY="python3"
-if ! python3 -c "import serial" 2>/dev/null; then
-    if [ -x "$HOME/.platformio/penv/bin/python" ]; then
-        PY="$HOME/.platformio/penv/bin/python"
-    fi
-fi
-
 TMPRAW=$(mktemp /tmp/screenshot_XXXXXX.raw)
 TMPDIMS=$(mktemp /tmp/screenshot_XXXXXX.dims)
 trap "rm -f '$TMPRAW' '$TMPDIMS'" EXIT
 
 echo "Taking screenshot from $PORT..."
 
-"$PY" - "$PORT" "$TMPRAW" "$TMPDIMS" << 'PYEOF'
+uv run --with pyserial python - "$PORT" "$TMPRAW" "$TMPDIMS" << 'PYEOF'
 import serial, sys
 
 port_path, raw_path, dims_path = sys.argv[1], sys.argv[2], sys.argv[3]

@@ -1,7 +1,6 @@
 # install-windows.ps1 - Clawdmeter Windows turnkey bootstrap (D-09)
 #
-# Creates a Python virtual environment, installs dependencies from
-# daemon\requirements-windows.txt, registers the tray app to launch at login
+# Synchronizes the uv-managed Python environment, registers the tray app to launch at login
 # (HKCU\...\Run, no admin required), and starts the tray app immediately.
 #
 # Usage:
@@ -13,8 +12,8 @@
 # To disable autostart later: right-click the tray icon -> uncheck "Start at login"
 # Or remove manually: reg delete "HKCU\Software\Microsoft\Windows\CurrentVersion\Run" /v Clawdmeter /f
 #
-# Security: this script downloads nothing from the internet. It installs only
-# the packages listed in the in-repo daemon\requirements-windows.txt.
+# Security: this script downloads no application code. uv resolves packages
+# declared by the in-repo pyproject.toml and uv.lock.
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
@@ -59,29 +58,22 @@ there, e.g.
 }
 
 # ------------------------------------------------------------------
-# Step 1: Create virtual environment
+# Step 1: Synchronize uv environment
 # ------------------------------------------------------------------
 $VenvDir = Join-Path $RepoRoot ".venv"
-if (Test-Path $VenvDir) {
-    Log "Virtual environment already exists at .venv - skipping creation"
-} else {
-    Log "Creating virtual environment at .venv ..."
-    & python -m venv $VenvDir
-    if ($LASTEXITCODE -ne 0) { throw "Failed to create virtual environment (exit $LASTEXITCODE)" }
-    Log "Virtual environment created"
+if (-not (Get-Command uv -ErrorAction SilentlyContinue)) {
+    throw "uv is required; install it from https://docs.astral.sh/uv/"
 }
+Log "Synchronizing dependencies with uv ..."
+& uv sync --project $RepoRoot --group windows --python 3.11
+if ($LASTEXITCODE -ne 0) { throw "uv sync failed (exit $LASTEXITCODE)" }
+Log "Dependencies synchronized"
 
 # ------------------------------------------------------------------
-# Step 2: Install dependencies
+# Step 2: Resolve environment interpreters
 # ------------------------------------------------------------------
 $PythonExe  = Join-Path $VenvDir "Scripts\python.exe"
 $PythonwExe = Join-Path $VenvDir "Scripts\pythonw.exe"
-$RequirementsFile = Join-Path $RepoRoot "daemon\requirements-windows.txt"
-
-Log "Installing dependencies from daemon\requirements-windows.txt ..."
-& $PythonExe -m pip install --quiet -r $RequirementsFile
-if ($LASTEXITCODE -ne 0) { throw "pip install failed (exit $LASTEXITCODE)" }
-Log "Dependencies installed"
 
 # ------------------------------------------------------------------
 # Step 3: Register autostart (HKCU\Run, per-user, no admin needed)

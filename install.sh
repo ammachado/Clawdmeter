@@ -128,6 +128,10 @@ echo ""
 
 # Check dependencies
 echo "[1/4] Checking dependencies..."
+if ! command -v uv >/dev/null; then
+    echo "Error: uv is required; install it from https://docs.astral.sh/uv/"
+    exit 1
+fi
 for cmd in curl awk bluetoothctl busctl; do
     command -v "$cmd" >/dev/null || { echo "Error: $cmd is required but not installed"; exit 1; }
 done
