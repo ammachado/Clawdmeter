@@ -546,23 +546,16 @@ def test_main_no_saved_addr_file_or_skip_addr():
         "main() must not reference retrieve_connected (macOS HID path)"
 
 
-def test_requirements_windows_contains_required_deps():
-    """requirements-windows.txt must contain the expected deps.
+def test_pyproject_windows_group_contains_required_deps():
+    """The uv project metadata must provide every Windows runtime dependency."""
+    project_path = Path(__file__).parent.parent.parent / "pyproject.toml"
+    content = project_path.read_text().lower()
 
-    Phase 3 (reconnect) added no new deps; Phase 4 (tray) adds pystray + Pillow.
-    This test asserts the final expected state: bleak, httpx, pystray, Pillow
-    must be present; winreg must NOT be listed (it is stdlib — no install needed).
-    """
-    req_path = Path(__file__).parent.parent / "requirements-windows.txt"
-    content = req_path.read_text()
-    lines = {line.strip().lower() for line in content.splitlines()
-             if line.strip() and not line.strip().startswith("#")}
-
-    assert "bleak" in lines, "bleak must be in requirements-windows.txt"
-    assert "httpx" in lines, "httpx must be in requirements-windows.txt"
-    assert "pystray" in lines, "pystray must be in requirements-windows.txt (Phase 4)"
-    assert "pillow" in lines, "Pillow must be in requirements-windows.txt (Phase 4)"
-    assert "winreg" not in lines, "winreg is stdlib — must NOT be in requirements-windows.txt"
+    assert "bleak" in content
+    assert "httpx" in content
+    assert "pystray" in content
+    assert "pillow" in content
+    assert "winreg" not in content
 
 
 # ---------------------------------------------------------------------------
