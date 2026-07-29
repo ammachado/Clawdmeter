@@ -11,7 +11,7 @@ the manual-run fallback, and how to manage or remove autostart.
 | Requirement | Details |
 |-------------|---------|
 | **Native Windows** | Must run on real Windows — not WSL. The script prints a warning and BLE will not work under WSL. |
-| **Python 3.11+** | Download from [python.org](https://www.python.org/downloads/) if not already installed. Ensure "Add python.exe to PATH" is checked during install. |
+| **[uv](https://docs.astral.sh/uv/)** | Required. It selects Python 3.11+ and synchronizes the locked project dependencies. |
 | **Claude Code installed** | Install Claude Code and complete `claude login` so credentials exist on disk. |
 | **Clawdmeter powered on** | The device must be powered on and in range before the daemon starts. |
 | **Paired with Windows Bluetooth** | Pair the device once via **Settings → Bluetooth & devices → Add device** (see [Pair the device](#pair-the-device-one-time)). This is required — the device is a bonded BLE HID keyboard, so pairing enables its physical buttons and keeps a persistent connection that shows your last usage even when the daemon is stopped. |
@@ -63,40 +63,22 @@ pairing disables the keyboard buttons.
 
 Open a PowerShell terminal and `cd` to the repository root.
 
-**1. Create a virtual environment**
+**Synchronize the locked environment**
 
 ```powershell
-python -m venv .venv
+uv sync --group windows
 ```
 
-**2. Activate it**
-
-```powershell
-.venv\Scripts\Activate.ps1
-```
-
-If you see a scripts-execution-policy error, run:
-```powershell
-Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
-```
-Then repeat the `Activate.ps1` step.
-
-**3. Install dependencies**
-
-```powershell
-pip install -r daemon\requirements-windows.txt
-```
-
-This installs `bleak` (WinRT BLE) and `httpx` (async HTTP for the Anthropic API).
+This creates `.venv` and installs `bleak` (WinRT BLE), `httpx` (async HTTP for the Anthropic API), `pystray`, and `Pillow` from `pyproject.toml` and `uv.lock`.
 
 ---
 
 ## Running the daemon
 
-With the venv active and the Clawdmeter powered on:
+With the uv-synchronized environment and the Clawdmeter powered on:
 
 ```powershell
-python daemon\claude_usage_daemon_windows.py
+uv run --group windows python daemon\claude_usage_daemon_windows.py
 ```
 
 ### Expected console output
@@ -154,7 +136,7 @@ Press **Ctrl+C** in the terminal. The daemon logs `Daemon stopping` and exits cl
 > **Copy the repo to a native Windows path first.** Clone or copy this repository
 > to a Windows location such as `%USERPROFILE%\Clawdmeter` — **not** a WSL share
 > (`\\wsl$\...` or `\\wsl.localhost\...`). Installing from the WSL share would point
-> the virtual environment and the login-autostart entry at a path that disappears when
+> the uv-managed environment and the login-autostart entry at a path that disappears when
 > WSL shuts down, defeating the whole point of the Windows daemon. The installer
 > detects a WSL path and refuses to run, telling you how to relocate.
 >
@@ -171,13 +153,12 @@ powershell -ExecutionPolicy Bypass -File install-windows.ps1
 
 The script does four things in order and logs progress at each step:
 
-1. Creates a Python virtual environment at `.venv`.
-2. Installs dependencies from `daemon\requirements-windows.txt` (bleak, httpx, pystray, Pillow).
+1. Runs `uv sync --group windows`, creating `.venv` from `pyproject.toml` and `uv.lock`.
+2. Synchronizes bleak, httpx, pystray, and Pillow.
 3. Registers the tray app to launch automatically at login via `HKCU\Software\Microsoft\Windows\CurrentVersion\Run` — per-user, no admin required.
 4. Launches the tray app immediately (headless — no console window).
 
-The script downloads nothing from the internet. It only installs the packages listed in
-the in-repo `daemon\requirements-windows.txt`.
+uv may download locked Python packages that are not already present in its local cache; it does not download application code outside this repository.
 
 ### Tray icon and status
 

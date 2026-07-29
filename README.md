@@ -42,9 +42,10 @@ Boards supported out of the box:
 
 - Linux (tested on Ubuntu), macOS, or Windows 10/11
 - [PlatformIO CLI](https://docs.platformio.org/en/latest/core/installation/index.html)
-- Linux: `curl`, `bluetoothctl`, `busctl` (BlueZ Bluetooth stack)
-- macOS: `python3` (the installer sets up a venv with `bleak` and `httpx`)
-- Windows: `python3` 3.11+ (the installer sets up a venv with `bleak`, `httpx`, and `pystray`)
+- [uv](https://docs.astral.sh/uv/)
+- Linux: `curl`, `bluetoothctl`, `busctl`, and `python3` (BlueZ Bluetooth stack; the Bash daemon uses Python for date arithmetic)
+- macOS: uv manages the daemon's Python environment
+- Windows: uv selects Python 3.11+ and manages the tray app's environment
 - Claude Code with an active subscription
 
 ## macOS installation
@@ -72,7 +73,7 @@ The daemon reads your Claude OAuth token from the macOS Keychain (service `Claud
 ./install-mac.sh
 ```
 
-The installer creates a Python venv in `daemon/.venv/`, installs `bleak` and `httpx`, renders a LaunchAgent into `~/Library/LaunchAgents/com.user.claude-usage-daemon.plist`, and loads it. The first run is launched interactively so macOS prompts for Bluetooth permission.
+The installer runs `uv sync` to create the repository `.venv` with `bleak` and `httpx`, renders a LaunchAgent into `~/Library/LaunchAgents/com.user.claude-usage-daemon.plist`, and loads it. The first run is launched interactively so macOS prompts for Bluetooth permission.
 
 Useful commands:
 
@@ -129,7 +130,7 @@ Runs natively on Windows — no WSL required. A system-tray app polls your usage
 ### Prerequisites
 
 - **Native Windows** (not WSL).
-- **Python 3.11+** from [python.org](https://www.python.org/downloads/) — check *"Add python.exe to PATH"* during install.
+- **[uv](https://docs.astral.sh/uv/)** — the installer uses it to select Python 3.11+ and synchronize dependencies.
 - **Claude Code** installed, with `claude login` completed. The token is read from `%USERPROFILE%\.claude\.credentials.json` (falling back to `%LOCALAPPDATA%\Claude\` then `%APPDATA%\Claude\`).
 - The repo on a **native Windows path** (e.g. `%USERPROFILE%\Clawdmeter`), **not** a `\\wsl$` share — the installer refuses a WSL path.
 
@@ -153,15 +154,13 @@ From the repo root in PowerShell:
 powershell -ExecutionPolicy Bypass -File install-windows.ps1
 ```
 
-This creates a venv, installs `bleak`/`httpx`/`pystray`/`Pillow` from the in-repo requirements (no internet downloads), registers a per-user login-autostart entry (`HKCU\…\Run`, no admin needed), and launches the tray app headlessly (no console window).
+This runs `uv sync --group windows` to create `.venv` with `bleak`/`httpx`/`pystray`/`Pillow` from the locked project dependencies, registers a per-user login-autostart entry (`HKCU\…\Run`, no admin needed), and launches the tray app headlessly (no console window).
 
 ### Run manually instead (optional)
 
 ```powershell
-python -m venv .venv
-.venv\Scripts\Activate.ps1        # if blocked: Set-ExecutionPolicy -Scope CurrentUser RemoteSigned, then retry
-pip install -r daemon\requirements-windows.txt
-python daemon\claude_usage_daemon_windows.py        # runs in the foreground; Ctrl+C to stop
+uv sync --group windows
+uv run --group windows python daemon\claude_usage_daemon_windows.py  # runs in the foreground; Ctrl+C to stop
 ```
 
 ### Tray icon and menu

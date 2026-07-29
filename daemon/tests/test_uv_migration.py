@@ -32,3 +32,13 @@ def test_installers_and_screenshot_use_uv():
     assert "uv run --with pyserial python -" in screenshot
     assert "pip install" not in macos
     assert "-m venv" not in windows
+
+
+def test_documentation_describes_uv_workflow_without_pip_or_manual_venvs():
+    files = [ROOT / "README.md", ROOT / "CLAUDE.md", ROOT / "daemon" / "README-windows.md"]
+    content = "\n".join(path.read_text() for path in files)
+
+    assert "uv" in content
+    assert "pip install" not in content
+    assert "python -m venv" not in content
+    assert "falls back to pio's bundled Python" not in content
