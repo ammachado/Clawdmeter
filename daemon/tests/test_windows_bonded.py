@@ -14,7 +14,6 @@ Run: python -m pytest daemon/tests/test_windows_bonded.py -x -q
 import asyncio
 from unittest.mock import patch
 
-import pytest
 
 import daemon.claude_usage_daemon_windows as win
 from daemon.claude_usage_daemon_windows import (

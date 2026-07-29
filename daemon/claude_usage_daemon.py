@@ -11,7 +11,6 @@ import calendar
 import datetime
 import getpass
 import json
-import os
 import re
 import shutil
 import signal

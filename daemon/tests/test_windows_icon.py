@@ -55,7 +55,8 @@ def test_rgb565_expand():
 
 def test_logo_parse_bounds_check():
     """load_logo_rgba raises ValueError if the data array length != W*H*3."""
-    import tempfile, os
+    import tempfile
+    import os
 
     # Write a malformed header with fewer bytes than expected
     malformed = (
