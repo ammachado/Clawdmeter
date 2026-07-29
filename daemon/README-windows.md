@@ -185,13 +185,25 @@ Right-click the tray icon for the menu:
   device stays connected to Windows and keeps showing your last-synced usage (point-in-time
   view).
 
-### Disabling or removing autostart
+### Disabling autostart
 
 Use the tray menu toggle, or remove the registry value manually:
 
 ```powershell
 reg delete "HKCU\Software\Microsoft\Windows\CurrentVersion\Run" /v Clawdmeter /f
 ```
+
+### Uninstalling Clawdmeter
+
+From the repository root, run:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File uninstall-windows.ps1
+```
+
+The uninstaller stops the Clawdmeter tray process, removes the per-user Run
+registry value, the repository `.venv`, and `%LOCALAPPDATA%\Clawdmeter`. It
+does not delete the repository, Bluetooth pairing, Claude credentials, or `uv`.
 
 ### WSL independence
 

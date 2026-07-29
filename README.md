@@ -84,6 +84,16 @@ launchctl unload ~/Library/LaunchAgents/com.user.claude-usage-daemon.plist  # st
 launchctl load -w ~/Library/LaunchAgents/com.user.claude-usage-daemon.plist # start
 ```
 
+### Uninstall the daemon
+
+```bash
+./uninstall-mac.sh
+```
+
+This stops and removes the LaunchAgent, the repository `.venv`, Clawdmeter logs,
+and Clawdmeter configuration. It preserves this repository, Bluetooth pairing,
+Claude credentials, `uv`, and `blueutil`.
+
 ## Linux installation
 
 ### Flash the firmware
@@ -122,6 +132,15 @@ systemctl --user start claude-usage-daemon
 Check status: `systemctl --user status claude-usage-daemon`
 
 View logs: `journalctl --user -u claude-usage-daemon -f`
+
+### Uninstall the daemon
+
+```bash
+./uninstall.sh
+```
+
+This stops and removes the systemd user service and Clawdmeter configuration.
+It preserves this repository, Bluetooth pairing, and Claude credentials.
 
 ## Windows installation
 
@@ -177,6 +196,18 @@ The icon's corner bubble shows state — **green** Connected, **amber** Scanning
 Get-Content $env:LOCALAPPDATA\Clawdmeter\daemon.log -Tail 30        # view logs
 reg delete "HKCU\Software\Microsoft\Windows\CurrentVersion\Run" /v Clawdmeter /f   # remove autostart
 ```
+
+### Uninstall the daemon
+
+From the repository root in PowerShell:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File uninstall-windows.ps1
+```
+
+This stops the Clawdmeter tray process, removes its login-autostart entry, and
+deletes the repository `.venv` plus `%LOCALAPPDATA%\Clawdmeter`. It preserves
+this repository, Bluetooth pairing, Claude credentials, and `uv`.
 
 | Symptom | Fix |
 |---------|-----|

@@ -39,6 +39,26 @@ def test_documentation_describes_uv_workflow_without_pip_or_manual_venvs():
     content = "\n".join(path.read_text() for path in files)
 
     assert "uv" in content
+    assert "uninstall-windows.ps1" in content
     assert "pip install" not in content
     assert "python -m venv" not in content
     assert "falls back to pio's bundled Python" not in content
+
+
+def test_uninstall_scripts_target_only_clawdmeter_managed_state():
+    linux = (ROOT / "uninstall.sh").read_text()
+    macos = (ROOT / "uninstall-mac.sh").read_text()
+    windows = (ROOT / "uninstall-windows.ps1").read_text()
+
+    assert 'SERVICE_NAME="claude-usage-daemon"' in linux
+    assert "systemctl --user daemon-reload" in linux
+    assert "$HOME/.config/claude-usage-monitor" in linux
+
+    assert 'SERVICE_LABEL="com.user.claude-usage-daemon"' in macos
+    assert '"$SCRIPT_DIR/.venv"' in macos
+    assert '"$HOME/.config/claude-usage-monitor"' in macos
+
+    assert "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Run" in windows
+    assert '"Clawdmeter"' in windows
+    assert 'Join-Path $RepoRoot ".venv"' in windows
+    assert 'Join-Path $env:LOCALAPPDATA "Clawdmeter"' in windows
